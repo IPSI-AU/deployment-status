@@ -1,0 +1,56 @@
+name: Snyk Security Scan
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+permissions:
+  id-token: write
+  contents: write
+
+jobs:
+  snyk-sca:
+    name: Snyk SCA (Dependencies)
+    runs-on: default
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Snyk CLI
+        uses: snyk/actions/setup@master
+
+      - name: Run Snyk SCA
+        run: snyk test --severity-threshold=high --sarif-file-output=snyk-sca.sarif
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      - name: Upload SARIF as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: snyk-sca-sarif
+          path: snyk-sca.sarif
+          if-no-files-found: warn
+
+  snyk-sast:
+    name: Snyk SAST (Code)
+    runs-on: default
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Snyk CLI
+        uses: snyk/actions/setup@master
+
+      - name: Run Snyk Code
+        run: snyk code test --severity-threshold=high --sarif-file-output=snyk-sast.sarif
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      - name: Upload SARIF as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: snyk-sast-sarif
+          path: snyk-sast.sarif
+          if-no-files-found: warn
